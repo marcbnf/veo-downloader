@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Veo Downloader</title>
+    <link rel="icon" href="icon.png" />
+    <style>
+      :root {
+        --bg-color: #f3f4f6;
+        --text-color: #1f2937;
+        --card-bg: #ffffff;
+        --input-border: #d1d5db;
+        --btn-bg: #2563eb;
+        --btn-hover: #1d4ed8;
+        --err-color: #dc2626;
+      }
+      [data-theme="dark"] {
+        --bg-color: #111827;
+        --text-color: #f9fafb;
+        --card-bg: #1f2937;
+        --input-border: #374151;
+        --btn-bg: #3b82f6;
+        --btn-hover: #2563eb;
+        --err-color: #ef4444;
+      }
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        display: flex;
+        justify-content: center;
+        padding-top: 80px;
+        margin: 0;
+        min-height: 100vh;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      main {
+        background: var(--card-bg);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        width: 100%;
+        max-width: 480px;
+        height: fit-content;
+        position: relative;
+      }
+      h1 {
+        text-align: center;
+        font-size: 1.5rem;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        box-sizing: border-box;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        background-color: transparent;
+        color: inherit;
+      }
+      button {
+        width: 100%;
+        padding: 12px;
+        background-color: var(--btn-bg);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background-color: var(--btn-hover);
+      }
+      .out { margin-top: 16px; word-break: break-all; font-size: 0.9rem; }
+      .err { color: var(--err-color); }
+      #theme-toggle {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: auto;
+        padding: 8px;
+        background: transparent;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        line-height: 1;
+      }
+      #theme-toggle:hover {
+        background-color: rgba(128, 128, 128, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <button id="theme-toggle" title="Changer de thème">🌙</button>
+      <h1>Veo Downloader</h1>
+
+      <input id="veoLink" placeholder="Colle le lien Veo (app.veo.co/matches/...)" />
+      <button id="go">Obtenir le MP4</button>
+
+      <div class="out" id="out"></div>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
