@@ -1,7 +1,5 @@
 const WORKER_ENDPOINT = "https://veo-proxy.marcbnf.workers.dev/";
 
-const re = /https:\/\/c\.veocdn\.com\/[a-z0-9-]+\/standard\/machine\/[a-z0-9]+\/?/i;
-
 const out = document.querySelector("#out");
 const input = document.querySelector("#veoLink");
 
@@ -16,31 +14,76 @@ document.querySelector("#go").addEventListener("click", async () => {
     return;
   }
 
+  // 1. Extraction de l'ID vidéo (d'après le regex du code Python)
+  const idMatch = veoLink.match(/app\.veo\.co\/matches\/([0-9A-Za-z-_]+)/);
+  if (!idMatch) {
+    out.className = "out err";
+    out.textContent = "Lien Veo invalide.";
+    return;
+  }
+  const videoId = idMatch[1];
+
   incrementDailyCount();
 
   try {
-    const url = new URL(WORKER_ENDPOINT);
-    url.searchParams.set("url", veoLink);
+    // 2. Construction de l'URL de l'API Veo exposée dans le Python
+    const apiUrl = `https://app.veo.co/api/app/matches/${videoId}/videos`;
 
-    const html = await fetch(url.toString(), { method: "GET" }).then((r) => {
+    // 3. Appel de l'API via ton proxy pour contourner les CORS
+    const proxyUrl = new URL(WORKER_ENDPOINT);
+    proxyUrl.searchParams.set("url", apiUrl);
+
+    const videoData = await fetch(proxyUrl.toString(), { method: "GET" }).then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.text();
+      return r.json(); // On parse en JSON directement
     });
 
-    const m = html.match(re);
-    if (!m?.[0]) throw new Error("Aucune URL veocdn détectée.");
+    if (!Array.isArray(videoData) || videoData.length === 0) {
+      throw new Error("Aucune donnée vidéo trouvée.");
+    }
 
-    const mp4 = (m[0].endsWith("/") ? m[0] : (m[0] + "/")) + "video.mp4";
+    // 4. Logique de filtrage équivalente au script Python
+    let bestUrl = null;
+    let bestHeight = 0;
+
+    for (const fmt of videoData) {
+      const url = fmt.url;
+      const mimeType = fmt.mime_type;
+      const height = parseInt(fmt.height, 10) || 0;
+      const renderType = fmt.render_type;
+
+      // Le script Python ignore les configurations vidéo mp2t ou les urls vides
+      if (!url || mimeType === 'video/mp2t') {
+        continue;
+      }
+
+      // On évite 'panorama' car le script Python indique que ces URLs sont 
+      // souvent mortes même quand elles sont renvoyées par l'API.
+      // On cherche la meilleure résolution des vidéos classiques.
+      if (renderType !== 'panorama' && height > bestHeight) {
+        bestHeight = height;
+        bestUrl = url;
+      }
+    }
+
+    // Fallback de sécurité : si aucune vidéo non-panoramique n'est trouvée,
+    // on prend la première URL mp4 valide disponible.
+    if (!bestUrl) {
+      const fallback = videoData.find(fmt => fmt.url && fmt.mime_type !== 'video/mp2t');
+      if (fallback) bestUrl = fallback.url;
+    }
+
+    if (!bestUrl) throw new Error("Aucune URL vidéo MP4 exploitable trouvée.");
 
     out.innerHTML = `
-      <video src="${mp4}" controls playsinline style="width: 100%; border-radius: 8px; margin-bottom: 1rem;"></video>
+      <video src="${bestUrl}" controls playsinline style="width: 100%; border-radius: 8px; margin-bottom: 1rem;"></video>
       <button id="download">Ouvrir le lien</button>
     `;
 
     document.querySelector("#download").addEventListener("click", () => {
       const a = document.createElement("a");
-      a.href = mp4;
-      a.download = "video.mp4";
+      a.href = bestUrl;
+      a.download = "video.mp4"; // Ou ${videoId}.mp4
       a.target = "_blank";
       document.body.appendChild(a);
       a.click();
